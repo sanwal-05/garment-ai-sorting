@@ -1,0 +1,33 @@
+# Dataset and image files
+data/
+*.jpg
+*.jpeg
+*.png
+*.zip
+
+# Cached features and model checkpoints
+*.npz
+*.h5
+*.keras
+checkpoints/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+.site-packages/
+.keras/
+.cache/
+.matplotlib/
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+
+# Secrets
+.env
+.env.*
+!.env.example
