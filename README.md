@@ -41,4 +41,5 @@ The dataset represents second-hand fashion sorting data and is used as a proxy f
 
 ## Authors
 
-Sanjana Bhowal, Riya Tyagi, and project collaborators.
+Sanjana Bhowal, Riya Tyagi and Riddhima Deshmukh
+
