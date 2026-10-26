@@ -25,7 +25,7 @@ export type Disposition =
   | "RECYCLE"
   | "INSPECT_MANUALLY";
 
-export type ScoreKey = "stain_present" | "hole_present" | "hole_major" | "heavily_worn";
+export type ScoreKey = "stain_present" | "hole_major" | "heavily_worn";
 
 export type Level = "lo" | "mid" | "hi";
 

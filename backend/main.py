@@ -220,7 +220,7 @@ async def create_return(
         claim_text=text,
         front_path=str(front_path),
         back_path=str(back_path),
-        scores={k: scores[k] for k in ("stain_present", "hole_present", "hole_major", "heavily_worn")},
+        scores={k: scores.get(k, 0.0) for k in ("stain_present", "hole_major", "heavily_worn")},
         levels=outcome["levels"],
         decision=outcome["decision"],
         disposition=outcome["disposition"],

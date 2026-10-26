@@ -9,11 +9,11 @@ from typing import Any, Mapping
 BACKEND_DIR = Path(__file__).resolve().parent
 THRESHOLDS_PATH = BACKEND_DIR / "thresholds.json"
 
-SCORE_KEYS = ("stain_present", "hole_present", "hole_major", "heavily_worn")
+SCORE_KEYS = ("stain_present", "hole_major", "heavily_worn")
 
 CLAIM_EVIDENCE = {
     "arrived_stained": "stain_present",
-    "arrived_damaged": "hole_present",
+    "arrived_damaged": "hole_major",
     "poor_quality": "heavily_worn",
 }
 
@@ -51,35 +51,45 @@ def _level(score: float, lo: float, hi: float) -> str:
 
 
 def scores_from_probs(probs: Mapping[str, Any]) -> dict[str, float]:
-    """Collapse multi-class softmax heads into the four vetting scores."""
+    """Collapse model heads into the active vetting scores (hole_major replaces flawed hole_present)."""
     stains = _as_list(probs["stains"])
     holes = _as_list(probs["holes"])
     condition = _as_list(probs["condition"])
     pilling = _as_list(probs["pilling"])
 
     stain_none, stain_minor, stain_major = (stains + [0.0, 0.0, 0.0])[:3]
-    hole_none, hole_minor, hole_major = (holes + [0.0, 0.0, 0.0])[:3]
-    cond = (condition + [0.0] * 5)[:5]
-    pill = (pilling + [0.0] * 5)[:5]
+    stain_p = float(stain_minor + stain_major) if len(stains) >= 3 else float((stains + [0.0, 0.0])[1])
 
-    # Dataset grades: condition/pilling 1 = worst, 5 = best.
-    heavily_worn = float(0.65 * (cond[0] + cond[1]) + 0.35 * (pill[0] + pill[1]))
+    # For holes: if 3-class (none, minor, major), use major class. If 2-class, use hole prob as major damage score.
+    if len(holes) >= 3:
+        hole_major = float(holes[2])
+        hole_none = float(holes[0])
+    else:
+        h_arr = (holes + [0.0, 0.0])[:2]
+        hole_none = float(h_arr[0])
+        hole_major = float(h_arr[1])
+
+    # Dataset grades: condition/pilling 1 = worst, 5 = best (or 3-class [low, mid, high]).
+    if len(condition) >= 5:
+        heavily_worn = float(0.65 * (condition[0] + condition[1]) + 0.35 * (pilling[0] + pilling[1]))
+    else:
+        heavily_worn = float(0.65 * condition[0] + 0.35 * pilling[0])
+
     return {
-        "stain_present": float(stain_minor + stain_major),
-        "hole_present": float(hole_minor + hole_major),
-        "hole_major": float(hole_major),
+        "stain_present": stain_p,
+        "hole_major": hole_major,
         "heavily_worn": heavily_worn,
         "stain_none": float(stain_none),
-        "hole_none": float(hole_none),
+        "hole_none": hole_none,
     }
 
 
 def _disposition(levels: Mapping[str, str]) -> str:
-    if levels["hole_major"] == "hi":
+    if levels.get("hole_major") == "hi":
         return "RECYCLE"
-    if levels["hole_present"] == "hi" or levels["stain_present"] == "hi":
+    if levels.get("stain_present") == "hi":
         return "REFURBISH"
-    if levels["heavily_worn"] == "hi":
+    if levels.get("heavily_worn") == "hi":
         return "RESELL_AS_USED"
     if any(levels[key] == "mid" for key in SCORE_KEYS):
         return "INSPECT_MANUALLY"
@@ -109,16 +119,14 @@ def decide(scores: Mapping[str, float], claim: str, text: str) -> dict[str, Any]
             decision = "REVIEW"
             reasons.append(f"Evidence for '{claim}' is inconclusive ({key} between thresholds).")
     elif claim in NON_DEFECT_CLAIMS:
-        severe = levels["hole_major"] == "hi" or (
-            levels["stain_present"] == "hi" and levels["hole_present"] == "hi"
-        )
+        severe = levels.get("hole_major") == "hi" or levels.get("stain_present") == "hi"
         clean = all(levels[key] == "lo" for key in SCORE_KEYS)
         if clean:
             decision = "ACCEPT"
             reasons.append("Item appears intact; non-defect claim can be processed.")
         elif severe:
             decision = "REVIEW"
-            reasons.append("Non-defect claim, but photos show significant damage that needs a human check.")
+            reasons.append("Non-defect claim, but photos show significant damage/stains that need a human check.")
         else:
             decision = "REVIEW"
             reasons.append("Non-defect claim with mixed visual quality; send to review.")
@@ -126,11 +134,11 @@ def decide(scores: Mapping[str, float], claim: str, text: str) -> dict[str, Any]
         decision = "REVIEW"
         reasons.append(f"Unrecognised claim category '{claim}'.")
 
-    if levels["hole_major"] == "hi":
-        reasons.append("Major-hole score is high.")
-    if levels["stain_present"] == "hi":
+    if levels.get("hole_major") == "hi":
+        reasons.append("Major-hole score is high (significant damage detected).")
+    if levels.get("stain_present") == "hi":
         reasons.append("Stain-present score is high.")
-    if levels["heavily_worn"] == "hi":
+    if levels.get("heavily_worn") == "hi":
         reasons.append("Garment appears heavily worn.")
     if len(text) < 40 and decision == "REVIEW":
         reasons.append("Customer description is brief, which adds uncertainty.")

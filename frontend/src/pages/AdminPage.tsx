@@ -16,7 +16,7 @@ import { DecisionBadge, DispositionBadge } from "../components/Badges";
 import ScoreBar from "../components/ScoreBar";
 import { CLAIM_OPTIONS, type AdminReturn, type Decision, type Disposition, type ScoreKey } from "../types";
 
-const SCORE_KEYS: ScoreKey[] = ["stain_present", "hole_present", "hole_major", "heavily_worn"];
+const SCORE_KEYS: ScoreKey[] = ["stain_present", "hole_major", "heavily_worn"];
 const DEV_TOKEN = "dev-admin-token";
 
 const loginSchema = z.object({
