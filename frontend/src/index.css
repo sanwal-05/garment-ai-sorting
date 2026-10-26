@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #1c1917;
-  background: #f4efe6;
+  color: #29332D;
+  background-color: #F7F5EF;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -13,10 +13,11 @@
 body {
   margin: 0;
   min-height: 100vh;
+  color: #29332D;
   background:
-    radial-gradient(1200px 500px at 10% -10%, rgba(196, 92, 38, 0.08), transparent 50%),
-    radial-gradient(900px 400px at 100% 0%, rgba(63, 107, 74, 0.08), transparent 45%),
-    #f4efe6;
+    radial-gradient(1200px 500px at 10% -10%, rgba(157, 183, 197, 0.12), transparent 50%),
+    radial-gradient(900px 400px at 100% 0%, rgba(142, 173, 145, 0.12), transparent 45%),
+    #F7F5EF;
 }
 
 #root {
@@ -24,6 +25,6 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid #c45c26;
-  outline-offset: 3px;
+  outline: 2px solid #8EAD91;
+  outline-offset: 2px;
 }
