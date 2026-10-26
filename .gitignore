@@ -31,3 +31,14 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# App runtime
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/returns.db
+*.db

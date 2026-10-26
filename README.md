@@ -1,45 +1,71 @@
-# AI-Assisted Sorting and Refurbishment of Returned Garments Using Multi-Task Deep Learning
+# Returns Vetting Platform
 
-## Overview
+Customer returns are photographed (front and back), scored by a two-view garment model, then routed through a dual-threshold policy. Customers only ever see a friendly status. Reviewers see scores, reasons, and can override with an audit trail.
 
-This project explores the use of multi-task deep learning to assess second-hand garments using front and back images. It predicts four garment attributes: condition, pilling, stains, and holes.
+The original multi-task learning work (EfficientNetB0, four heads: condition, pilling, stains, holes) still lives in this repo: `DL_Proj_Improved.ipynb`, `run_experiments.py`, and `results/`.
 
-The predicted attributes can support a transparent, rule-based recommendation for the garment's potential next life, such as resale, refurbishment, repair, or recycling.
+## Layout
 
-## Model
+- `/frontend` — React + Vite + TypeScript + Tailwind
+- `/backend` — FastAPI + SQLModel (SQLite)
 
-- Backbone: EfficientNetB0 pretrained on ImageNet
-- Input: Front and back garment images
-- Tasks: Condition, pilling, stains, and holes classification
-- Framework: TensorFlow / Keras
-- Evaluation: Accuracy, macro-F1, weighted-F1, and confusion matrices
+## Quick start
 
-## Repository Contents
+### 1. Backend
 
-- `DL_Proj_Improved.ipynb` — improved notebook and experiment analysis
-- `run_experiments.py` — controlled experiment runner
-- `extract_features.py` — feature extraction and caching
-- `download_dataset.py` — dataset download and preparation
-- `results/` — experiment metrics and evaluation outputs
-- `figures/` — plots and confusion matrices
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+cp .env.example .env
+# keep MOCK_MODEL=1 until the Keras file is in place
+uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
 
-## Dataset
+Run that from the **repository root** so `backend.main:app` resolves.
 
-The project uses the Second-Hand Fashion Dataset v2 from Zenodo:
+Optional real model: copy `best_improved_garment_model.keras` to `backend/model/` and set `MOCK_MODEL=0`. Install TensorFlow first (`pip install tensorflow`). Images are decoded, resized to 224×224, and passed as raw 0–255 float32 — no extra normalisation — with inputs `front_image` and `back_image`.
 
-https://zenodo.org/records/12518734
+### 2. Frontend
 
-The dataset is not included in this repository. Refer to the dataset's license and instructions before downloading or using it.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Reproducibility
+Open http://localhost:5173  
+Admin desk: http://localhost:5173/admin (token from `ADMIN_TOKEN` in `.env`)
 
-The dataset, cached features, and trained model checkpoints are excluded because of their size. Run the scripts only after setting up the required dependencies and preparing the dataset paths for your machine.
+Vite proxies `/api` and `/uploads` to the API on port 8000.
 
-## Limitations
+### Docker (backend)
 
-The dataset represents second-hand fashion sorting data and is used as a proxy for returned-garment assessment. Performance varies across prediction tasks, particularly for underrepresented defect classes. The recommendations are decision-support suggestions, not verified refurbishment decisions.
+From the repository root:
 
-## Authors
+```bash
+docker build -t returns-api -f backend/Dockerfile backend
+docker run --rm -p 8000:8000 -e ADMIN_TOKEN=change-me -e MOCK_MODEL=1 returns-api
+```
 
-Sanjana Bhowal, Riya Tyagi and Riddhima Deshmukh
+## API
 
+| Method | Path | Who | Notes |
+| --- | --- | --- | --- |
+| POST | `/api/returns` | customer | multipart `front`, `back`, `claim_category`, `claim_text`. Returns `{id, status:"received"}` only. |
+| GET | `/api/returns/{id}/status` | customer | `received` \| `approved` \| `needs_more_info` \| `under_review` \| `declined`. No scores, thresholds, or reasons. |
+| GET | `/api/admin/returns?status=&decision=` | admin | Full internal rows. |
+| GET | `/api/admin/returns/{id}` | admin | Detail, including image URLs. |
+| POST | `/api/admin/returns/{id}/override` | admin | `{decision, disposition, note}`. Model output is kept. |
+
+Admin routes require `Authorization: Bearer $ADMIN_TOKEN`. Photos must be JPEG/PNG and under 8MB.
+
+## Decision policy
+
+`backend/decision.py` maps softmax heads to `stain_present`, `hole_present`, `hole_major`, and `heavily_worn`, then `decide(scores, claim, text)` using hi/lo thresholds in `backend/thresholds.json`.
+
+Replace `decision.py` with your own if you already have one — keep `scores_from_probs()` and `decide(scores, claim, text)`.
+
+## Dataset (research)
+
+Second-Hand Fashion Dataset v2: https://zenodo.org/records/12518734

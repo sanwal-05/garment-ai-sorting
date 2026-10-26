@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #1c1917;
+  background: #f4efe6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(196, 92, 38, 0.08), transparent 50%),
+    radial-gradient(900px 400px at 100% 0%, rgba(63, 107, 74, 0.08), transparent 45%),
+    #f4efe6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+*:focus-visible {
+  outline: 2px solid #c45c26;
+  outline-offset: 3px;
+}
