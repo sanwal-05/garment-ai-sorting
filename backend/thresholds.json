@@ -1,6 +1,18 @@
 {
-  "stain_present": { "lo": 0.25, "hi": 0.7 },
-  "hole_present": { "lo": 0.25, "hi": 0.7 },
-  "hole_major": { "lo": 0.2, "hi": 0.6 },
-  "heavily_worn": { "lo": 0.3, "hi": 0.7 }
+  "stain_present": {
+    "lo": 0.312,
+    "hi": 0.663
+  },
+  "hole_present": {
+    "lo": 0.168,
+    "hi": 0.485
+  },
+  "hole_major": {
+    "lo": 0.2,
+    "hi": 0.6
+  },
+  "heavily_worn": {
+    "lo": 0.28,
+    "hi": 0.508
+  }
 }
